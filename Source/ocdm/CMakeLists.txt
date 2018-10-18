@@ -9,6 +9,7 @@ set(PUBLIC_HEADERS
         DataExchange.h
         IOCDM.h
         open_cdm.h
+        open_cdm_ext.h
         Module.h
         )
 
