@@ -2,6 +2,7 @@ set(TARGET ocdm)
 
 add_library(${TARGET} SHARED
         open_cdm.cpp
+        open_cdm_ext.cpp
         ProxyStubs.cpp
         )
 
