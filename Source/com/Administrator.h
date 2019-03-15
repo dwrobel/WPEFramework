@@ -79,7 +79,24 @@ namespace RPC {
             return (_factory.Element());
         }
 
-        void DeleteChannel(const Core::IPCChannel* channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies)
+        void PendingProxies(const Core::IPCChannel* channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies)
+        {
+            _adminLock.Lock();
+
+            ChannelMap::iterator index(_channelProxyMap.find(channel));
+
+            if (index != _channelProxyMap.end()) {
+                ProxyList::iterator loop(index->second.begin());
+                while (loop != index->second.end()) {
+                    pendingProxies.push_back(*loop);
+                    loop++;
+                }
+            }
+
+            _adminLock.Unlock();
+        }
+
+        void DeleteProxies(const Core::IPCChannel* channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies)
         {
             _adminLock.Lock();
 
@@ -96,6 +113,7 @@ namespace RPC {
 
             _adminLock.Unlock();
         }
+
 
         template <typename ACTUALINTERFACE>
         ACTUALINTERFACE* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl)

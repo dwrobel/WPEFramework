@@ -202,7 +202,8 @@ namespace RPC {
         enum enumState {
             CONSTRUCTED,
             ACTIVE,
-            DEACTIVATED
+            DEACTIVATED,
+            RELEASED
         };
 
         virtual uint32_t Id() const = 0;
@@ -325,12 +326,13 @@ namespace RPC {
 
                         _parent->Deactivated(this);
 
-                        if (_channel.IsValid() == true) {
-                            _channel.Release();
-                        }
                     } else if (_state == IRemoteProcess::ACTIVE) {
 
                         _parent->Activated(this);
+                    } else if (_state == IRemoteProcess::RELEASED) {
+                        if (_channel.IsValid() == true) {
+                            _channel.Release();
+                        }
                     }
                 }
 
@@ -524,6 +526,21 @@ namespace RPC {
                 {
                     uint64_t result = 0;
 
+                    RemoteProcess* remoteProcess = dynamic_cast<RemoteProcess*>(_process);
+                    if (remoteProcess->HasChannel() == true) {
+
+                        std::list<ProxyStub::UnknownProxy*> deadProxies;
+                        RPC::Administrator::Instance().DeleteProxies(remoteProcess->Channel(), deadProxies);
+                        std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
+                        while (loop != deadProxies.end()) {
+                            if ((*loop)->Destroy() == Core::ERROR_DESTRUCTION_SUCCEEDED) {
+                                TRACE_L1("Could not destruct a Proxy on a failing channel!!!");
+                            }
+                            loop++;
+                        }
+
+                        remoteProcess->State(IRemoteProcess::RELEASED);
+                    }
                     if (_process->IsActive() == false) {
                         // It is no longer active.... just report, and clear our selves !!!
                         TRACE_L1("Destructed. Closed down nicely [%d].\n", _process->Id());
@@ -669,22 +686,19 @@ namespace RPC {
 
                 std::map<uint32_t, Communicator::RemoteProcess*>::iterator index(_processes.find(pid));
 
-                if (index != _processes.end()){
-					
-					if (index->second->HasChannel() == true) {
+                if (index != _processes.end()) {
 
-						std::list<ProxyStub::UnknownProxy*> deadProxies;
-						RPC::Administrator::Instance().DeleteChannel(index->second->Channel(), deadProxies);
-						std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
-						while (loop != deadProxies.end()) {
-							Core::IUnknown* base = (*loop)->QueryInterface<Core::IUnknown>();
-							_parent.Revoke(pid, base, (*loop)->InterfaceId());
-							if ((*loop)->Destroy() == Core::ERROR_DESTRUCTION_SUCCEEDED) {
-								TRACE_L1("Could not destruct a Proxy on a failing channel!!!");
-							}
-							loop++;
-						}
-					}
+                    if ((index->second->HasChannel() == true) && (index->second->State() == IRemoteProcess::ACTIVE)) {
+
+                        std::list<ProxyStub::UnknownProxy*> deadProxies;
+                        RPC::Administrator::Instance().PendingProxies(index->second->Channel(), deadProxies);
+                        std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
+                        while (loop != deadProxies.end()) {
+                            Core::IUnknown* base = (*loop)->QueryInterface<Core::IUnknown>();
+                            _parent.Revoke(pid, base, (*loop)->InterfaceId());
+                            loop++;
+                        }
+                    }
 
                     index->second->State(IRemoteProcess::DEACTIVATED);
 
