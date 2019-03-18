@@ -706,7 +706,7 @@ namespace RPC {
 
                     if (base == nullptr) {
                         TRACE_L1("Connection lost to process: %d", pid);
-                    } else if (base->IsActive() == false) {
+                    } else if ((base->IsActive() == false) && (index->second->HasChannel() == false)) {
                         TRACE_L1("CLEAN EXIT of process: %d", pid);
                     } else {
                         Core::Time scheduleTime(Core::Time::Now().Add(3000)); // Check again in 3S...
