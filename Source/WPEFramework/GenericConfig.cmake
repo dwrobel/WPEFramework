@@ -139,6 +139,8 @@ map_append(${CONFIG} plugins ${PLUGIN_CONTROLLER})
 
 json_write("${CMAKE_BINARY_DIR}/Config.json" ${CONFIG})
 
+# Make sure WPEFRAMEWORK_CONFIG_FILE is inline with the install() below
+add_definitions(-DWPEFRAMEWORK_CONFIG_FILE="${CMAKE_INSTALL_PREFIX}/../etc/${NAMESPACE}/config.json")
 install(
         FILES ${CMAKE_BINARY_DIR}/Config.json
         DESTINATION ${CMAKE_INSTALL_PREFIX}/../etc/${NAMESPACE}/
