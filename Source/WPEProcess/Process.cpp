@@ -1,6 +1,7 @@
 // process.cpp : Defines the entry point for the console application.
 //
 
+#include <csignal>
 #include "Module.h"
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
@@ -310,6 +311,8 @@ namespace Process {
                 libraryPath = pathName + locator;
             }
 
+printf("CheckInstance(path=%s, locator=%s, libraryPath=%s\n", path, locator, libraryPath.c_str());
+
             Core::Library library(libraryPath.c_str());
 
             if (library.IsLoaded() == true) {
@@ -385,6 +388,27 @@ int _tmain(int argc, _TCHAR* argv[])
 int main(int argc, char** argv)
 #endif
 {
+    pid_t pid = getpid();
+    bool waitForDebugger = false;
+
+    printf("pid[%u]: dw:Process.cpp\n", pid);
+
+    for (int i = 0; i < argc; i++) {
+       printf("pid[%u]: arg: %s\n", pid, argv[i]);
+
+       if (strcmp(argv[i], "WebKitImplementation") == 0)
+           waitForDebugger = true;
+    }
+
+    if (waitForDebugger) {
+       printf("pid[%u]: dw:Process.cpp waiting for debugger...\n", pid);
+       printf("pid[%u]: Issue\n", pid);
+       printf("pid[%u]:\t$ gdb -p %u\n", pid, pid);
+       printf("pid[%u]: or\n", pid);
+       printf("pid[%u]:\t$ kill -SIGCONT %u\n", pid, pid);
+       raise(SIGSTOP);
+       printf("pid[%u]: dw:Process.cpp running...\n", pid);
+    }
 #ifdef __WIN32__
     // Give the debugger time to attach to this process..
     Sleep(20000);
