@@ -371,9 +371,7 @@ typedef DEPRECATED signed long long sint64;
 #define TRUE (!FALSE)
 #endif
 
-#ifndef OK
-#define OK (0)
-#endif
+namespace WPEFramework { constexpr uint32_t OK = 0; }
 
 #ifdef __WIN32__
 #define SYSTEM_SYNC_HANDLE HANDLE
